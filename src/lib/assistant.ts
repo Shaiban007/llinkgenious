@@ -40,7 +40,7 @@ const TOOLS = [
       properties: {
         query: { type: "string", description: "Free text: name, company, industry, country, job title" },
         scope: { type: "string", enum: ["crm", "finder"], description: "crm = leads in the CRM (default); finder = discovered leads not yet in the CRM" },
-        status: { type: "string", description: "A status code such as NEW, CONTACTED, QUALIFIED, MEETING_SCHEDULED, PROPOSAL_SENT, WON, LOST" },
+        status: { type: "string", description: "A status code such as NEW, RESEARCHING, QUALIFIED, CONTACTED, FOLLOW_UP_REQUIRED, MEETING_SCHEDULED, PROPOSAL_SENT, NEGOTIATION, CONVERTED, NOT_INTERESTED, DISQUALIFIED" },
         category: { type: "string", enum: ["high", "good", "medium", "low"] },
         country: { type: "string" },
         has_email: { type: "boolean" },
