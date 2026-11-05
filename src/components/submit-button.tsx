@@ -12,6 +12,7 @@ export function SubmitButton({
   confirm,
   name,
   value,
+  formAction,
 }: {
   children: React.ReactNode;
   pendingText?: string;
@@ -21,6 +22,7 @@ export function SubmitButton({
   confirm?: string; // shows a browser confirmation before submitting
   name?: string;
   value?: string;
+  formAction?: (fd: FormData) => void | Promise<void>;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -28,6 +30,7 @@ export function SubmitButton({
       type="submit"
       name={name}
       value={value}
+      formAction={formAction}
       disabled={pending}
       onClick={(e) => {
         if (confirm && !window.confirm(confirm)) e.preventDefault();

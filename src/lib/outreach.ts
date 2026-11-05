@@ -210,6 +210,7 @@ export async function sendApprovedEmail(ctx: Ctx & { tz: string }, emailId: stri
     const [lead] = await db.select({ status: leads.status }).from(leads).where(eq(leads.id, mail.leadId));
     if (lead && ["NEW", "RESEARCHING", "QUALIFIED"].includes(lead.status)) await changeStatus(ctx, mail.leadId, "CONTACTED", "email sent");
     await logAudit({ workspaceId: ctx.workspaceId, userId: ctx.userId, action: "EMAIL_SENT", entity: "outreach_email", entityId: mail.id });
+    if (mail.campaignId) await checkCampaignCompletion(ctx.workspaceId, mail.campaignId);
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown sending error";
@@ -239,4 +240,18 @@ export async function sendAllApproved(ctx: Ctx & { tz: string }, max = 50) {
     }
   }
   return { sent, errors, attempted: rows.length };
+}
+
+/** When every lead in an active campaign has a SENT email, mark the campaign completed and tell its creator. */
+export async function checkCampaignCompletion(workspaceId: string, campaignId: string) {
+  const [c] = await db.select().from(campaigns).where(and(eq(campaigns.id, campaignId), eq(campaigns.workspaceId, workspaceId))).limit(1);
+  if (!c || c.status !== "ACTIVE") return;
+  const [r] = await db.execute<{ total: string; done: string }>(sql`
+    select count(*)::text as total,
+           count(*) filter (where exists (select 1 from outreach_emails e where e.campaign_id = cl.campaign_id and e.lead_id = cl.lead_id and e.status in ('SENT','REJECTED','FAILED')))::text as done
+    from campaign_leads cl where cl.campaign_id = ${campaignId}`);
+  if (Number(r.total) > 0 && r.total === r.done) {
+    await db.update(campaigns).set({ status: "COMPLETED" }).where(eq(campaigns.id, campaignId));
+    await notify({ workspaceId, userId: c.createdBy, type: "CAMPAIGN_COMPLETED", title: `Campaign “${c.name}” is complete`, body: "Every lead has been emailed or skipped.", link: `/campaigns/${c.id}`, dedupeKey: `campaign-done:${c.id}` });
+  }
 }
