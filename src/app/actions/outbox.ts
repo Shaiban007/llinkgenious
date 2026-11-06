@@ -24,9 +24,9 @@ export async function createDraftAction(fd: FormData) {
   flash("/outbox", { ok: "Draft saved. Review it and approve it — nothing is sent until you do." });
 }
 
-export async function updateDraftAction(fd: FormData) {
+/** Per-email buttons pass the email id with .bind(null, id): a submit button's own name/value is not sent to server actions. */
+export async function updateDraftAction(id: string, fd: FormData) {
   const s = await requireSession();
-  const id = str(fd.get("id"));
   const subject = str(fd.get(`subject_${id}`)).trim();
   const body = str(fd.get(`body_${id}`)).trim();
   if (subject.length < 3 || body.length < 10) flash(back(fd), { err: "Subject and message cannot be empty." });
@@ -66,15 +66,15 @@ export async function rejectAction(fd: FormData) {
   flash(back(fd), { ok: `${res.length} email${res.length === 1 ? "" : "s"} rejected.` });
 }
 
-export async function deleteEmailAction(fd: FormData) {
+export async function deleteEmailAction(id: string, fd: FormData) {
   const s = await requireSession();
-  await db.delete(outreachEmails).where(and(eq(outreachEmails.id, str(fd.get("id"))), eq(outreachEmails.workspaceId, s.workspace.id), inArray(outreachEmails.status, ["DRAFT", "REJECTED", "FAILED"])));
+  await db.delete(outreachEmails).where(and(eq(outreachEmails.id, id), eq(outreachEmails.workspaceId, s.workspace.id), inArray(outreachEmails.status, ["DRAFT", "REJECTED", "FAILED"])));
   flash(back(fd), { ok: "Deleted." });
 }
 
-export async function sendOneAction(fd: FormData) {
+export async function sendOneAction(id: string, fd: FormData) {
   const s = await requireSession();
-  const r = await sendApprovedEmail(toCtx(s), str(fd.get("id")));
+  const r = await sendApprovedEmail(toCtx(s), id);
   revalidatePath("/outbox");
   flash(back(fd), r.ok ? { ok: "Email sent." } : { err: r.error });
 }
@@ -87,8 +87,8 @@ export async function sendAllApprovedAction(fd: FormData) {
   flash(back(fd), r.errors.length ? { err: `${r.sent} sent. ${r.errors[0]}${r.errors.length > 1 ? ` (+${r.errors.length - 1} more problems)` : ""}` } : { ok: `${r.sent} email${r.sent === 1 ? "" : "s"} sent.` });
 }
 
-export async function retryFailedAction(fd: FormData) {
+export async function retryFailedAction(id: string, fd: FormData) {
   const s = await requireSession();
-  await db.update(outreachEmails).set({ status: "DRAFT", error: null }).where(and(eq(outreachEmails.id, str(fd.get("id"))), eq(outreachEmails.workspaceId, s.workspace.id), eq(outreachEmails.status, "FAILED")));
+  await db.update(outreachEmails).set({ status: "DRAFT", error: null }).where(and(eq(outreachEmails.id, id), eq(outreachEmails.workspaceId, s.workspace.id), eq(outreachEmails.status, "FAILED")));
   flash(back(fd), { ok: "Moved back to drafts. Review and approve it again." });
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, asc, desc, eq, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db, leads, tasks, users } from "@/db";
 import { requireSession } from "@/lib/session";
 import { getMembers } from "@/lib/members";
@@ -42,7 +42,7 @@ export default async function TasksPage({ searchParams }: { searchParams: { view
       .leftJoin(leads, eq(leads.id, tasks.leadId))
       .leftJoin(users, eq(users.id, tasks.assignedTo))
       .where(and(...conds))
-      .orderBy(view === "done" ? desc(tasks.completedAt) : asc(sql`${tasks.dueAt} nulls last`))
+      .orderBy(view === "done" ? desc(tasks.completedAt) : sql`${tasks.dueAt} asc nulls last`)
       .limit(200),
     getMembers(s.workspace.id),
     db.select({ id: leads.id, name: leads.fullName, company: leads.companyName }).from(leads).where(and(eq(leads.workspaceId, s.workspace.id), eq(leads.inCrm, true), isNull(leads.archivedAt))).orderBy(desc(leads.lastActivityAt)).limit(300),

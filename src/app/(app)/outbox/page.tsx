@@ -137,7 +137,7 @@ export default async function OutboxPage({ searchParams }: { searchParams: { tab
                             <input name={`subject_${m.id}`} defaultValue={m.subject} className="input" aria-label="Subject" maxLength={200} />
                             <textarea name={`body_${m.id}`} defaultValue={m.body} rows={9} className="input font-mono text-[13px]" aria-label="Message" maxLength={8000} />
                             <p className="text-[11px] text-navy-400">Your signature, unsubscribe link and postal address are added automatically when the email is sent.</p>
-                            <button formAction={updateDraftAction} name="id" value={m.id} className="btn-secondary btn-sm">
+                            <button formAction={updateDraftAction.bind(null, m.id)} className="btn-secondary btn-sm">
                               Save changes
                             </button>
                           </div>
@@ -154,17 +154,17 @@ export default async function OutboxPage({ searchParams }: { searchParams: { tab
                     </div>
                     <div className="flex shrink-0 flex-col gap-1">
                       {m.status === "APPROVED" && (
-                        <SubmitButton formAction={sendOneAction} size="sm" pendingText="Sending…" name="id" value={m.id}>
+                        <SubmitButton formAction={sendOneAction.bind(null, m.id)} size="sm" pendingText="Sending…">
                           Send now
                         </SubmitButton>
                       )}
                       {m.status === "FAILED" && (
-                        <SubmitButton formAction={retryFailedAction} variant="secondary" size="sm" name="id" value={m.id}>
+                        <SubmitButton formAction={retryFailedAction.bind(null, m.id)} variant="secondary" size="sm">
                           Back to draft
                         </SubmitButton>
                       )}
                       {["DRAFT", "REJECTED", "FAILED"].includes(m.status) && (
-                        <SubmitButton formAction={deleteEmailAction} variant="ghost" size="sm" name="id" value={m.id} confirm="Delete this email?">
+                        <SubmitButton formAction={deleteEmailAction.bind(null, m.id)} variant="ghost" size="sm" confirm="Delete this email?">
                           Delete
                         </SubmitButton>
                       )}
