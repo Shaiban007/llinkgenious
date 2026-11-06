@@ -135,7 +135,8 @@ export async function toXlsx(d: Dataset): Promise<Buffer> {
   const head = ws.addRow(d.columns);
   head.font = { bold: true, color: { argb: "FFFFFFFF" } };
   head.eachCell((c) => (c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF243054" } }));
-  for (const r of d.rows) ws.addRow(r.map((c) => (typeof c === "string" && /^[=+\-@]/.test(c) ? "'" + c : c)));
+  // Strings are stored as plain text cells in .xlsx (never evaluated as formulas), so no prefix is needed.
+  for (const r of d.rows) ws.addRow(r);
   d.columns.forEach((c, i) => {
     const longest = Math.max(c.length, ...d.rows.slice(0, 200).map((r) => String(r[i] ?? "").length));
     ws.getColumn(i + 1).width = Math.min(48, longest + 3);
@@ -157,7 +158,7 @@ export function toPdf(d: Dataset): Promise<Buffer> {
     doc.font("Helvetica").fontSize(9).fillColor("#555").text(d.subtitle);
     doc.moveDown(0.8);
     const n = d.columns.length;
-    const weights = d.columns.map((c, i) => Math.max(6, Math.min(26, Math.max(c.length, ...d.rows.slice(0, 60).map((r) => String(r[i] ?? "").length)))));
+    const weights = d.columns.map((c, i) => Math.max(c.length + 1, 5, Math.min(26, Math.max(...d.rows.slice(0, 60).map((r) => String(r[i] ?? "").length), 0))));
     const total = weights.reduce((a, b) => a + b, 0);
     const widths = weights.map((w) => (w / total) * W);
     const fs = n > 11 ? 6.5 : n > 8 ? 7.5 : 8.5;

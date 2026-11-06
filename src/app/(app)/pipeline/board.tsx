@@ -44,7 +44,7 @@ export function Board({ columns }: { columns: BoardColumn[] }) {
       <p role="status" aria-live="polite" className="mb-2 h-5 text-xs text-navy-500">
         {msg}
       </p>
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      <div className="relative flex gap-3 overflow-x-auto pb-4">
         {cols.map((c) => (
           <section
             key={c.key}

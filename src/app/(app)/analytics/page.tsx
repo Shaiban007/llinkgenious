@@ -30,8 +30,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
         <StageBars title="Sales funnel" subtitle="Leads that reached each stage in this period" data={a.steps.map((x) => ({ label: x.label, value: x.value }))} />
         <Card>
           <CardHeader title="Stage-to-stage conversion" subtitle="Share of the previous stage that reached the next one" />
-          <table className="w-full"><thead><tr><th className="th">From → To</th><th className="th text-right">From</th><th className="th text-right">To</th><th className="th text-right">Rate</th></tr></thead>
-            <tbody>{a.steps.slice(1).map((x, i) => <tr key={x.key}><td className="td">{a.steps[i].label} → {x.label}</td><td className="td text-right tabular-nums">{a.steps[i].value}</td><td className="td text-right tabular-nums">{x.value}</td><td className="td text-right tabular-nums">{pct(x.value, a.steps[i].value)}</td></tr>)}</tbody></table>
+          <div className="overflow-x-auto"><table className="w-full min-w-[460px]"><thead><tr><th className="th">From → To</th><th className="th text-right">From</th><th className="th text-right">To</th><th className="th text-right">Rate</th></tr></thead>
+            <tbody>{a.steps.slice(1).map((x, i) => <tr key={x.key}><td className="td">{a.steps[i].label} → {x.label}</td><td className="td text-right tabular-nums">{a.steps[i].value}</td><td className="td text-right tabular-nums">{x.value}</td><td className="td text-right tabular-nums">{pct(x.value, a.steps[i].value)}</td></tr>)}</tbody></table></div>
           <p className="px-5 pb-4 text-xs text-navy-400">Leads can reach a stage that was added in an earlier period, so a rate above 100% just means older leads progressed.</p>
         </Card>
         <RankedBars title="Lead sources" subtitle="Where your leads came from" data={a.sources.map((x) => ({ label: x.source, value: x.leads }))} categoryLabel="Source" />
@@ -42,13 +42,13 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
         </Card>
         <Card>
           <CardHeader title="Does the score predict results?" subtitle="Outcome by score band — if High-band leads convert more, the scoring rules are working" />
-          <table className="w-full"><thead><tr><th className="th">Band</th><th className="th text-right">Leads</th><th className="th text-right">Qualified</th><th className="th text-right">Converted</th><th className="th text-right">Conversion</th></tr></thead>
-            <tbody>{a.bands.length === 0 && <tr><td colSpan={5} className="td text-navy-400">No data yet.</td></tr>}{a.bands.map((x) => <tr key={x.band}><td className="td">{x.band}</td><td className="td text-right tabular-nums">{x.leads}</td><td className="td text-right tabular-nums">{x.qualified}</td><td className="td text-right tabular-nums">{x.converted}</td><td className="td text-right tabular-nums">{pct(x.converted, x.leads)}</td></tr>)}</tbody></table>
+          <div className="overflow-x-auto"><table className="w-full min-w-[460px]"><thead><tr><th className="th">Band</th><th className="th text-right">Leads</th><th className="th text-right">Qualified</th><th className="th text-right">Converted</th><th className="th text-right">Conversion</th></tr></thead>
+            <tbody>{a.bands.length === 0 && <tr><td colSpan={5} className="td text-navy-400">No data yet.</td></tr>}{a.bands.map((x) => <tr key={x.band}><td className="td">{x.band}</td><td className="td text-right tabular-nums">{x.leads}</td><td className="td text-right tabular-nums">{x.qualified}</td><td className="td text-right tabular-nums">{x.converted}</td><td className="td text-right tabular-nums">{pct(x.converted, x.leads)}</td></tr>)}</tbody></table></div>
         </Card>
         <Card>
           <CardHeader title="Time spent in each stage" subtitle="Average days leads stayed before moving on" />
-          <table className="w-full"><thead><tr><th className="th">Stage</th><th className="th text-right">Leads that moved on</th><th className="th text-right">Avg days</th></tr></thead>
-            <tbody>{a.stageTime.length === 0 && <tr><td colSpan={3} className="td text-navy-400">Not enough movement yet.</td></tr>}{a.stageTime.map((x) => <tr key={x.status}><td className="td">{STATUS_LABEL[x.status as LeadStatus] ?? x.status}</td><td className="td text-right tabular-nums">{x.visits}</td><td className="td text-right tabular-nums">{x.avgDays ?? "—"}</td></tr>)}</tbody></table>
+          <div className="overflow-x-auto"><table className="w-full min-w-[460px]"><thead><tr><th className="th">Stage</th><th className="th text-right">Leads that moved on</th><th className="th text-right">Avg days</th></tr></thead>
+            <tbody>{a.stageTime.length === 0 && <tr><td colSpan={3} className="td text-navy-400">Not enough movement yet.</td></tr>}{a.stageTime.map((x) => <tr key={x.status}><td className="td">{STATUS_LABEL[x.status as LeadStatus] ?? x.status}</td><td className="td text-right tabular-nums">{x.visits}</td><td className="td text-right tabular-nums">{x.avgDays ?? "—"}</td></tr>)}</tbody></table></div>
         </Card>
         <RankedBars title="Countries" subtitle="Where your leads are" data={a.countries.map((x) => ({ label: x.country, value: x.leads }))} color={COLORS.orange} categoryLabel="Country" />
         <Card>

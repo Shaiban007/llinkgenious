@@ -70,6 +70,9 @@ async function main() {
     assert.equal(csvEscape("=SUM(A1)"), "'=SUM(A1)");
     assert.equal(csvEscape('a,"b"'), '"a,""b"""');
     assert.equal(csvEscape(null), "");
+    assert.equal(csvEscape("+971 50 123 4567"), "+971 50 123 4567"); // real phone numbers stay readable
+    assert.equal(csvEscape("+cmd|' /C calc'!A0"), "'+cmd|' /C calc'!A0");
+    assert.equal(csvEscape("@SUM(1)"), "'@SUM(1)");
   });
   await test("date ranges: 7 days spans exactly 7 days", () => {
     const r = resolveRange({ range: "7d" }, "Asia/Kolkata", new Date("2026-11-05T10:00:00Z"));

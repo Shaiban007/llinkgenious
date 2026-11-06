@@ -153,7 +153,7 @@ export function previousRange(r: DateRange): { from: Date; to: Date } {
 export function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
   let s = v instanceof Date ? v.toISOString() : String(v);
-  // Neutralise spreadsheet formula injection (=, +, -, @ at the start of a cell).
-  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  // Neutralise spreadsheet formula injection. Plain phone numbers / negative numbers (+971 50 123 4567, -5) are left alone.
+  if (/^[=@\t\r]/.test(s) || (/^[+\-]/.test(s) && !/^[+\-][\d\s().-]*$/.test(s))) s = "'" + s;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }

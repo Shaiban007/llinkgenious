@@ -93,13 +93,13 @@ export function AppShell({ userName, userEmail, emailVerified, isWsAdmin, isPlat
         </div>
       )}
 
-      <div className="lg:pl-64">
+      <div className="min-w-0 lg:pl-64">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-navy-100 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
           <button className="btn-ghost lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
             <Icons.Menu size={18} />
           </button>
 
-          <form action={switchWorkspace} className="flex items-center gap-2">
+          <form action={switchWorkspace} className="flex min-w-0 items-center gap-2">
             <Icons.Building2 size={16} className="hidden text-navy-400 sm:block" />
             {workspaces.length > 1 ? (
               <>
@@ -113,11 +113,11 @@ export function AppShell({ userName, userEmail, emailVerified, isWsAdmin, isPlat
                 </select>
               </>
             ) : (
-              <span className="max-w-[220px] truncate text-sm font-semibold text-navy-800">{workspaceName}</span>
+              <span className="max-w-[140px] truncate text-sm font-semibold text-navy-800 sm:max-w-[220px]">{workspaceName}</span>
             )}
           </form>
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <Link href="/notifications" className="btn-ghost relative !px-2.5" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}>
               <Icons.Bell size={18} />
               {unread > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500" />}
@@ -156,7 +156,7 @@ export function AppShell({ userName, userEmail, emailVerified, isWsAdmin, isPlat
           </div>
         )}
 
-        <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
+        <main className="mx-auto min-w-0 max-w-[1400px] px-4 py-6 sm:px-6">
           <Suspense>
             <FlashFromUrl />
           </Suspense>
