@@ -5,7 +5,9 @@
 import "../scripts/_env";
 import assert from "node:assert/strict";
 import { eq, inArray } from "drizzle-orm";
-import { db, emailSuppressions, leads, outreachEmails, users, workspaces } from "@/db";
+import { db, emailSuppressions, integrations, leads, outreachEmails, users, workspaces } from "@/db";
+import { askAssistant } from "@/lib/assistant";
+import type { AppSession } from "@/lib/session";
 import { scoreLead } from "@/lib/scoring";
 import { DEFAULT_SETTINGS, getSettings } from "@/lib/workspace-settings";
 import { achievementPct } from "@/lib/kpi-catalog";
@@ -183,6 +185,63 @@ async function main() {
       await db.update(outreachEmails).set({ status: "APPROVED", approvedBy: A.u.id }).where(eq(outreachEmails.id, d.id));
       const r = await sendApprovedEmail(B.ctx, d.id);
       assert.equal(r.ok, false);
+    });
+    await test("AI assistant: tool loop reads real data and saves a DRAFT only (stubbed Anthropic)", async () => {
+      const bella = await createLead(A.ctx, { fullName: "Bella Importer", email: "bella@rice.example", companyName: "Bella Rice Co" });
+      assert.ok(bella.ok);
+      const blead = bella.ok ? bella.lead : lead;
+      await db.insert(integrations).values({ workspaceId: A.ws.id, provider: "ANTHROPIC", status: "CONFIGURED", config: { model: "claude-sonnet-5-5" }, secretEnc: encrypt("sk-ant-test") });
+      const session = { user: { id: A.u.id, name: A.u.name, email: A.u.email, role: "USER", image: null, emailVerified: true }, workspace: { id: A.ws.id, name: A.ws.name, companyName: "Test Co", industry: null, timezone: "Asia/Kolkata", dateFormat: "dd MMM yyyy", settings: getSettings(A.ws.settings) }, memberRole: "ADMIN", isWsAdmin: true, isPlatformAdmin: false, workspaces: [] } as unknown as AppSession;
+      const realFetch = globalThis.fetch;
+      let calls = 0;
+      let leadSearchResult = "";
+      globalThis.fetch = (async (_u: unknown, init?: RequestInit) => {
+        calls++;
+        const body = JSON.parse(String(init?.body));
+        assert.equal((init?.headers as Record<string, string>)["x-api-key"], "sk-ant-test");
+        const j = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
+        if (calls === 1) return j({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "t1", name: "search_leads", input: { query: "Bella" } }] });
+        if (calls === 2) {
+          leadSearchResult = JSON.stringify(body.messages.at(-1).content[0].content);
+          return j({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "t2", name: "create_email_draft", input: { lead_id: blead.id, subject: "Basmati supply", body: "Hello Bella, we export basmati rice." } }] });
+        }
+        return j({ stop_reason: "end_turn", content: [{ type: "text", text: "Done: I saved a draft." }] });
+      }) as typeof fetch;
+      try {
+        const r = await askAssistant(session, [{ role: "user", content: "Draft an email to Bella" }]);
+        assert.ok(r.ok);
+        if (r.ok) {
+          assert.equal(r.reply, "Done: I saved a draft.");
+          assert.equal(r.drafts.length, 1);
+          assert.deepEqual(r.tools.sort(), ["create_email_draft", "search_leads"]);
+        }
+        assert.ok(leadSearchResult.includes("Bella Importer"), "tool result contained the real lead");
+        const drafts = await db.select().from(outreachEmails).where(eq(outreachEmails.subject, "Basmati supply"));
+        assert.equal(drafts.length, 1);
+        assert.equal(drafts[0].status, "DRAFT");
+        // workspace B's assistant can never read workspace A's lead
+        const sessionB = { ...session, workspace: { ...session.workspace, id: B.ws.id, settings: getSettings(B.ws.settings) }, user: { ...session.user, id: B.u.id } } as AppSession;
+        await db.insert(integrations).values({ workspaceId: B.ws.id, provider: "ANTHROPIC", status: "CONFIGURED", config: {}, secretEnc: encrypt("sk-ant-test") });
+        calls = 0;
+        globalThis.fetch = (async () => {
+          calls++;
+          if (calls === 1) return new Response(JSON.stringify({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "x", name: "get_lead", input: { lead_id: blead.id } }] }), { status: 200 });
+          leadSearchResult = "";
+          return new Response(JSON.stringify({ stop_reason: "end_turn", content: [{ type: "text", text: "ok" }] }), { status: 200 });
+        }) as typeof fetch;
+        let seen = "";
+        const inner = globalThis.fetch;
+        globalThis.fetch = (async (u: unknown, init?: RequestInit) => {
+          const b = JSON.parse(String(init?.body));
+          const last = b.messages.at(-1);
+          if (Array.isArray(last.content) && last.content[0]?.type === "tool_result") seen = last.content[0].content;
+          return inner(u as string, init);
+        }) as typeof fetch;
+        await askAssistant(sessionB, [{ role: "user", content: "Show that lead" }]);
+        assert.ok(seen.includes("not found"), `cross-workspace read returned: ${seen}`);
+      } finally {
+        globalThis.fetch = realFetch;
+      }
     });
   } finally {
     if (made.wsIds.length) await db.delete(workspaces).where(inArray(workspaces.id, made.wsIds));
