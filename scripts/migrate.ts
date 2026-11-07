@@ -13,7 +13,7 @@ async function main() {
     console.error("DATABASE_URL is not set. Create .env.local from .env.example first.");
     process.exit(1);
   }
-  const client = postgres(url, { max: 1 });
+  const client = postgres(url, { max: 1, prepare: false }); // prepare:false keeps this working through hosted poolers
   try {
     await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
     console.log("✔ Database is up to date.");
